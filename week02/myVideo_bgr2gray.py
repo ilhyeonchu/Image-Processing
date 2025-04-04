@@ -38,6 +38,11 @@ def calc_bgr2gray(src):
     # 과제 부분 시작
     for row in range(h):
         for col in range(w):
+            B = src[row, col, 0]
+            G = src[row, col, 1]
+            R = src[row, col, 2]
+            gray = 0.0721 * B + 0.7154 * G + 0.2125 * R
+            dst[row, col] = gray
             ##############################################
             # TODO
             # B * 0.0721 + G * 0.7154 + R * 0.2125 공식을 사용
@@ -54,7 +59,7 @@ def calc_bgr2gray(src):
 
 if __name__ == "__main__":
     VIDEO_INPUT_FILE_PATH = 'jin.avi'  # 동영상 경로
-    VIDEO_OUTPUT_FILE_PATH = './gray_recorded.avi' # MacOS의 경우, './gray_recorded.mp4'
+    VIDEO_OUTPUT_FILE_PATH = './gray_recorded.mp4' # MacOS의 경우, './gray_recorded.mp4'
 
     color_frames = get_video_frames(VIDEO_INPUT_FILE_PATH)                              # 비디오의 모든 프레임 가져오기
     gray_frames = [calc_bgr2gray(color_frame) for color_frame in tqdm(color_frames)]    # 비디오의 모든 프레임을 회색으로 변환

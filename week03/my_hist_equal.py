@@ -3,6 +3,17 @@ import cv2
 import matplotlib.pyplot as plt
 
 def my_calcHist(src):
+
+    # 실습 코드들 참고, 이미지의 명암에 대한 히스토그램을 계산
+    h, w = src.shape
+    hist = np.zeros(256, dtype=np.int32)
+    for row in range(h):
+        for col in range(w):
+            intensity = src[row, col]
+            hist[intensity] += 1
+
+    return hist
+
     ###############################
     # TODO                        #
     # my_calcHist완성              #
@@ -10,11 +21,14 @@ def my_calcHist(src):
     # hist : src의 히스토그램       #
     ###############################
 
-    hist = ???
 
-    return hist
 
 def my_normalize_hist(hist, pixel_num):
+
+    # 그냥 위에서 구한 histogram을 pixel_num으로 나누면 됨
+    normalized_hist = hist / pixel_num
+    return normalized_hist
+
     ########################################################
     # TODO                                                 #
     # my_normalize_hist완성                                 #
@@ -23,11 +37,18 @@ def my_normalize_hist(hist, pixel_num):
     # normalized_hist : 히스토그램값을 총 픽셀수로 나눔         #
     ########################################################
 
-    normalized_hist = ???
-    return normalized_hist
+
 
 
 def my_PDF2CDF(pdf):
+
+    # cdf안에 차례대로 누적 비율?을 넣어주면 됨
+    cdf = np.zeros(pdf.shape)
+    cdf[0] = pdf[0]
+    for i in range(1, len(pdf)):
+        cdf[i] = cdf[i - 1] + pdf[i]
+    return cdf
+
     ########################################################
     # TODO                                                 #
     # my_PDF2CDF완성                                        #
@@ -36,12 +57,14 @@ def my_PDF2CDF(pdf):
     # cdf : pdf의 누적                                      #
     ########################################################
 
-    cdf = np.zeros(pdf.shape)
-    cdf = ???
-    return cdf
 
 
 def my_denormalize(normalized, gray_level):
+
+    # normalized 값에 저장된 cdf를 255(gray_level) 곱해주기
+    denormalized = normalized * gray_level
+    return denormalized
+
     ########################################################
     # TODO                                                 #
     # my_denormalize완성                                   #
@@ -50,21 +73,31 @@ def my_denormalize(normalized, gray_level):
     # denormalized : normalized와 gray_level을 곱함        #
     ########################################################
 
-    denormalized = ???
-    return denormalized
 
 def my_intensity_vector(denormalized_output):
+
+    # 2주차 수업 자료에 나와있는 np.floor()를 사용해 버림으로 정수값으로 변환
+    intensity_vector = np.floor(denormalized_output).astype(np.uint8)  # astype 안하면 다음에 타입 문제 발생
+    return intensity_vector
+
     ###################################################################
     # TODO                                                            #
     # my_intensity_vector완성                                         #
     # denormalized_output : normalized와 gray_level을 곱한 값             #
     # intensity_vector : denormalized_output 버림을 하여 정수값으로 변환    #
     ####################################################################
-    intensity_vector = ???
-    return intensity_vector
 
 
 def my_calcHist_equalization(intensity_vector, hist):
+
+    # hist[i] 는 원래 i라는 값을 가지고 있는 픽셀 수
+    # 이 값을 변환된 픽셀 값인 intensity_vector[i]의 위치에 추가시켜줌
+    hist_equal = np.zeros(256, dtype=np.int32)
+    for i in range(256):
+        hist_equal[intensity_vector[i]] += hist[i]
+
+    return hist_equal
+
     ###################################################################
     # TODO                                                            #
     # my_calcHist_equalization완성                                    #
@@ -73,12 +106,17 @@ def my_calcHist_equalization(intensity_vector, hist):
     # hist_equal : equalization된 히스토그램                           #
     ####################################################################
 
-    hist_equal = ???
-
-    return hist_equal
 
 
 def my_equal_img(src, intensity_vector):
+
+    (h, w) = src.shape
+    src_flat = np.reshape(src, (h * w)) # 1차원으로 변환
+    one_hot_src = np.eye(256)[src_flat] # 원핫 인코딩
+    dst = np.dot(one_hot_src, intensity_vector).reshape(h, w)   # 원핫 인코딩된 src에 intensity_vector를 곱해줌
+    dst = dst.astype(np.uint8)  # 타입 변환
+
+    return dst
     ###################################################################
     # TODO                                                            #
     # my_equal_img완성                                                 #
@@ -88,13 +126,8 @@ def my_equal_img(src, intensity_vector):
     # one_hot_src : one-hot encoding된 src                             #
     # dst : equalization된 결과 이미지                                   #
     ####################################################################
-    (h, w) = src.shape
 
-    one_hot_src = ???
-    dst = ???
-    dst = dst.astype(np.uint8)
 
-    return dst
 
 
 
@@ -127,7 +160,8 @@ def my_hist_equal(src, type='original'):
     # y축 : 0 ~ 255 각각의 정수 값에 해당하는 equalization 변환 픽셀 값
     ###################################################################
 
-    plt.plot(???, ???)
+    #
+    plt.plot(np.arange(256), intensity_vector)
     plt.title(type + ' intensity function')
     plt.xlabel('input intensity')
     plt.ylabel('output intensity')
@@ -168,16 +202,24 @@ if __name__ == '__main__':
     # src_mul : src * 2
     ###################################################################
 
-    src_add = ???
+    src_add = src.astype(np.float32) + 64
+    src_add[src_add > 255] = 255
+    src_add[src_add < 0] = 0
     src_add = np.round(src_add).astype(np.uint8)
 
-    src_sub = ???
+    src_sub = src.astype(np.float32) - 64
+    src_sub[src_sub > 255] = 255
+    src_sub[src_sub < 0] = 0
     src_sub = np.round(src_sub).astype(np.uint8)
 
-    src_div = ???
+    src_div = src.astype(np.float32) / 3
+    src_div[src_div > 255] = 255
+    src_div[src_div < 0] = 0
     src_div = np.round(src_div).astype(np.uint8)
 
-    src_mul = ???
+    src_mul = src.astype(np.float32) * 2
+    src_mul[src_mul > 255] = 255
+    src_mul[src_mul < 0] = 0
     src_mul = np.round(src_mul).astype(np.uint8)
 
     # original
