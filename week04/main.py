@@ -39,13 +39,20 @@ def filter2D(image, kernel, padding_size=None, padding_type=None):
 
     ####### 윗 부분 수정 금지! #######
 
-    filtered_image_height   = ???   # 필터링 이후의 이미지 높이
-    filtered_image_width    = ???   # 필터링 이후의 이미지 너비
+    filtered_image_height   = image_height    # 필터링 이후의 이미지 높이
+    filtered_image_width    = image_width    # 필터링 이후의 이미지 너비
     filtered_image = np.zeros((filtered_image_height, filtered_image_width), dtype=image.dtype)
     for row in range(filtered_image_height):
         for column in range(filtered_image_width):
             # TODO: <-- 이 부분에 코드가 한 줄 이상 들어갑니다! -->
+            # 커널의 크기에 맞춰서 영역 지정
+            start_row = row
+            start_column = column
+            end_row = row + kernel_height
+            end_column = column + kernel_width
             
+            # 위에서 지정한 영역에 해당하는 패딩된 이미지의 값을 가져와서 필터링링
+            filtered_image[row, column] = np.sum(padded_image[start_row:end_row, start_column:end_column] * kernel_values)
 
     return filtered_image # 필터링 된 이미지 반환
 
@@ -54,12 +61,31 @@ if __name__ == "__main__":
     plain_image     = cv2.imread("Lena.png",        cv2.IMREAD_GRAYSCALE)
     noised_image    = cv2.imread("Lena_noise.png",  cv2.IMREAD_GRAYSCALE)
 
-    kernel_size     = ???
+    kernel_size     = (3,3)
 
     # TODO : 커널 크기에 따라 패딩 크기 계산 할것
-    padding_size    = ???
+    
+    height = kernel_size[0]
+    width  = kernel_size[1]
+    
+    # 패딩 크기 계산, 정사각형이라는 조건이 없으므로 가로 세로 따로 계산
+    if(height % 2 == 0):
+        top = (height -1) // 2
+        bottom = height -1 - top
+    else:
+        top = (height -1) // 2
+        bottom = height - top - 1
+    
+    if(width % 2 == 0):
+        left = (width -1) // 2
+        right = width -1 - left
+    else:
+        left = (width -1) // 2
+        right = width - left - 1
+    
+    padding_size = (top, bottom, left, right)
 
-    gaussian_sigma  = ???
+    gaussian_sigma  = 1.0
 
     ######################## 아래 부분 수정 금지! ########################
 
