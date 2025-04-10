@@ -45,6 +45,7 @@ def filter2D(image, kernel, padding_size=None, padding_type=None):
     for row in range(filtered_image_height):
         for column in range(filtered_image_width):
             # TODO: <-- 이 부분에 코드가 한 줄 이상 들어갑니다! -->
+            
 
     return filtered_image # 필터링 된 이미지 반환
 
