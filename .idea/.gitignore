@@ -8,4 +8,15 @@
 /dataSources.local.xml
 .idea/Image-Processing.iml
 .idea/misc.xml
-.vscode/settings.json
+.idea/modules.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+/Image-Processing.iml
+/misc.xml
+/modules.xml
+/inspectionProfiles/profiles_settings.xml
+/vcs.xml
+.venv/
+send.wav
+__pycache__/
+*.py[cod]
