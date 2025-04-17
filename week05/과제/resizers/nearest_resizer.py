@@ -10,10 +10,16 @@ class NearestResizer(BaseResizer):
         for row in range(self.new_shape[0]):
             for col in range(self.new_shape[1]):
                 # TODO : NN interpolation 구현
-                y = ???
-                x = ???
+                
+                # nearest이므로 0.5를 더해주고 소수점을 버리면 가장 가까운 좌표를 찾을 수 있음(수업자료)
+                y = int(row * a_y + b_y + 0.5)
+                x = int(col * a_x + b_x + 0.5)
+                # 범위를 벗어나지 않게 min 사용
+                y = min(y, old_img.shape[0] - 1)
+                x = min(x, old_img.shape[1] - 1)
 
-                intensity = ???
+                # old_img에서 값 가져오기, intensity라는 변수를 따로 만드는 의미가 있나?
+                intensity = old_img[y, x]
 
                 new_img[row, col] = intensity
 

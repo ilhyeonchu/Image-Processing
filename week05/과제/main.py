@@ -15,8 +15,8 @@ def main():
     old_img = cv2.imread('Lena.png', cv2.IMREAD_GRAYSCALE)
 
     # TODO : Resize할 이미지 크기 입력
-    downsample_shape = (???, ???)
-    upsample_shape = (???, ???)
+    downsample_shape = (222, 222)
+    upsample_shape = (1024, 1024)
 
     ################### 아래 코드 수정 금지 #####################
     downsample_bilinear_resizer = BilinearResizer(old_img, downsample_shape)
