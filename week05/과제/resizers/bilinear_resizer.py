@@ -13,7 +13,7 @@ class BilinearResizer(BaseResizer):
                 y = row * a_y + b_y
                 x = col * a_x + b_x
                 
-                # 왼쪽 위 좌표, 오른쪽 아래 좌표(범위 안벗어나게 min 사용용)
+                # 왼쪽 위 좌표, 오른쪽 아래 좌표(범위 안벗어나게 min 사용)
                 y_floor = int(y)
                 x_floor = int(x)
                 y_ceil = min(y_floor + 1, old_img.shape[0] - 1)

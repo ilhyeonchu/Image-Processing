@@ -18,7 +18,7 @@ class NearestResizer(BaseResizer):
                 y = min(y, old_img.shape[0] - 1)
                 x = min(x, old_img.shape[1] - 1)
 
-                # old_img에서 값 가져오기, intensity라는 변수를 따로 만드는 의미가 있나?
+                # old_img에서 값 가져오기
                 intensity = old_img[y, x]
 
                 new_img[row, col] = intensity

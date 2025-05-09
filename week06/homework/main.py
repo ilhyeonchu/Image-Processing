@@ -16,12 +16,18 @@ def filter2D(image, filter_values, padding_size=None, padding_type=None):
     image_height, image_width = image.shape[:2]
     filter_height, filter_width = filter_values.shape[:2]
 
-    filtered_image_height = ???
-    filtered_image_width = ???
+    filtered_image_height = image_height
+    filtered_image_width = image_width
     filtered_image = np.zeros((filtered_image_height, filtered_image_width), dtype=image.dtype)
     for row in range(filtered_image_height):
         for column in range(filtered_image_width):
-            ???
+            start_row = row
+            start_column = column
+            end_row = row + filter_height
+            end_column = column + filter_width
+
+            region = padded_image[start_row:end_row, start_column:end_column]
+            filtered_image[row, column] = np.sum(region * filter_values)
 
     return filtered_image
 
@@ -37,8 +43,8 @@ def create_dog_filter(filter_size, sigma):
     x_dir_derivative_filter = filter.Derivative(filter.Direction.X).values
     y_dir_derivative_filer = filter.Derivative(filter.Direction.Y).values
 
-    dog_x = ???
-    dog_y = ???
+    dog_x = x_dir_derivative_filter
+    dog_y = y_dir_derivative_filer
 
     return dog_x, dog_y
 
@@ -48,8 +54,8 @@ def create_log_filter(filter_size, sigma):
     x_dir_laplace_filter = filter.Laplace(filter.Direction.X).values
     y_dir_laplace_filer = filter.Laplace(filter.Direction.Y).values
 
-    log_x = ???
-    log_y = ???
+    log_x = x_dir_laplace_filter
+    log_y = y_dir_laplace_filer
 
     return log_x, log_y
 
@@ -60,7 +66,18 @@ def find_zero_crossing(log_output):
     zero_crossing_plane = np.zeros_like(log_output)
     for i in range(log_output.shape[0]):
         for j in range(log_output.shape[1]):
-            ???
+            # 4개의 픽셀 평균 p1-p4까지로 구해서 저장
+            p1 = (log_output_padded[i, j] + log_output_padded[i, j+1] + log_output_padded[i+1, j] + log_output_padded[i+1, j+1]) / 4
+            p2 = (log_output_padded[i,j+1] + log_output_padded[i,j+2] + log_output_padded[i+1,j+1] + log_output_padded[i+1, j+2]) / 4
+            p3 = (log_output_padded[i+1, j] + log_output_padded[i+1, j+1] + log_output_padded[i+2, j] + log_output_padded[i+2, j+1]) / 4
+            p4 = (log_output_padded[i+1, j+1] + log_output_padded[i+1, j+2] + log_output_padded[i+2, j+1] + log_output_padded[i+2, j+2]) / 4
+
+            # 최소 최대가 각각 양,음 수인지 체크
+            values = [p1, p2, p3, p4]
+
+            if max(values) > 0 and min(values) < 0:
+                zero_crossing_plane[i, j] = 1
+
 
     return zero_crossing_plane
 
@@ -71,7 +88,7 @@ if __name__ == "__main__":
     ################################# Derivative of gaussian #################################
     dog_filter_size = (13,13)
     dog_filter_sigma = 3
-    dog_filtering_padding_size = ???
+    dog_filtering_padding_size = [6,6,6,6] # [13,13]이 필터 크기이므로 모서리의 상하좌우에 6씩 추가해야
 
     dog_x, dog_y = create_dog_filter(dog_filter_size, dog_filter_sigma)
 
@@ -94,7 +111,7 @@ if __name__ == "__main__":
     ################################# Laplacian of gaussian #################################
     log_filter_size = (9, 9)
     log_filter_sigma = 1.4**0.5
-    log_filtering_padding_size = ???
+    log_filtering_padding_size = [4,4,4,4] # [9,9]이 필터 크기이므로 모서리의 상하좌우에 4씩 추가해야
     log_x, log_y = create_log_filter(log_filter_size, log_filter_sigma)
 
     visualize_log_filters(log_x, log_y)
@@ -106,9 +123,9 @@ if __name__ == "__main__":
     visualize_log_output(noised_image, log_output)
 
     ################################# Find zero crossing #################################
-    log_filter_size = ???
-    log_filter_sigma = ???
-    log_filtering_padding_size = ???
+    log_filter_size = [15, 15]  # 필터 사이즈 15x15로 주어짐
+    log_filter_sigma = 2     # 1-4 사이의 값
+    log_filtering_padding_size = [7, 7, 7, 7]   # [15,15]이 필터 크기이므로 모서리의 상하좌우에 7씩 추가해야
     log_x, log_y = create_log_filter(log_filter_size, log_filter_sigma)
 
     log_filter = log_x + log_y
@@ -119,6 +136,6 @@ if __name__ == "__main__":
     visualize_zero_crossing_output(noised_image, log_output, zero_crossing)
 
     ################################# Binarization #################################
-    threshold = ???
-    binarization_output = ???
+    threshold = 0.2 # 0-0.5 사이의 값 단위는 0.1
+    binarization_output = (gradient_magnitude > threshold).astype(np.uint8) # 기준값(threshold)보다 크면 1, 작으면 0으로 변환
     visualize_binarization_output(noised_image, gradient_magnitude, binarization_output)

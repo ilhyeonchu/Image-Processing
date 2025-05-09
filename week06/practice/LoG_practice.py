@@ -8,7 +8,8 @@ def get_log_filter(fsize, sigma):
     xs = np.tile(idx, (fsize, 1))
     ys = xs.T
 
-    log_filter = ???
+    r_squared = xs ** 2 + ys ** 2
+    log_filter = -1 / (np.pi * sigma ** 4) * (1 - r_squared / (2 * sigma ** 2)) * np.exp(-r_squared / (2 * sigma ** 2))
 
     return log_filter
 

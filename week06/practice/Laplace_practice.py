@@ -20,7 +20,9 @@ if __name__ == "__main__":
     clean_image = clean_image / 255.
     noised_image = noised_image / 255.
 
-    laplace_filter = ???
+    laplace_filter = np.array([[-1,-1,-1],
+                               [-1,8,-1],
+                               [-1,-1,-1]], dtype=np.float64)
 
     filtered_clean = cv2.filter2D(clean_image, -1, laplace_filter)
     filtered_noise = cv2.filter2D(noised_image, -1, laplace_filter)
