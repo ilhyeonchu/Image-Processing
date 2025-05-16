@@ -40,8 +40,8 @@ if __name__ == "__main__":
     image = cv2.imread('noise_Lena.png', cv2.IMREAD_GRAYSCALE)
     image = image.astype(np.float32) / 255.
 
-    f_size = 13
-    sigma = 3
+    f_size = 25
+    sigma = 7
 
     DoG_y, DoG_x = get_DoG_filter_by_equation(f_size, sigma)
 

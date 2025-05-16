@@ -43,8 +43,11 @@ def create_dog_filter(filter_size, sigma):
     x_dir_derivative_filter = filter.Derivative(filter.Direction.X).values
     y_dir_derivative_filer = filter.Derivative(filter.Direction.Y).values
 
-    dog_x = x_dir_derivative_filter
-    dog_y = y_dir_derivative_filer
+    x_dir_derivative_filter = x_dir_derivative_filter.reshape(1,-1)
+    y_dir_derivative_filer = y_dir_derivative_filer.reshape(-1,1)
+
+    dog_x = np.outer(gaussian_filter[:, 0], x_dir_derivative_filter[0])
+    dog_y = np.outer(y_dir_derivative_filer[:, 0], gaussian_filter[0])
 
     return dog_x, dog_y
 
@@ -94,8 +97,8 @@ if __name__ == "__main__":
 
     visualize_dog_filters(dog_x, dog_y)
 
-    dog_x_output = filter2D(noised_image, dog_x, dog_filtering_padding_size, padding.Repeat)
-    dog_y_output = filter2D(noised_image, dog_y, dog_filtering_padding_size, padding.Repeat)
+    dog_x_output = filter2D(noised_image, dog_x, dog_filtering_padding_size, padding.Zero)
+    dog_y_output = filter2D(noised_image, dog_y, dog_filtering_padding_size, padding.Zero)
 
     gradient_magnitude = get_magnitude(dog_x_output, dog_y_output)
     gradient_magnitude = min_max_scaling(gradient_magnitude)
@@ -118,7 +121,7 @@ if __name__ == "__main__":
 
     log_filter = log_x + log_y
 
-    log_output = filter2D(noised_image, log_filter, log_filtering_padding_size, padding.Repeat)
+    log_output = filter2D(noised_image, log_filter, log_filtering_padding_size, padding.Zero)
 
     visualize_log_output(noised_image, log_output)
 
@@ -130,7 +133,7 @@ if __name__ == "__main__":
 
     log_filter = log_x + log_y
 
-    log_output = filter2D(noised_image, log_filter, log_filtering_padding_size, padding.Repeat)
+    log_output = filter2D(noised_image, log_filter, log_filtering_padding_size, padding.Zero)
     zero_crossing = find_zero_crossing(log_output)
 
     visualize_zero_crossing_output(noised_image, log_output, zero_crossing)

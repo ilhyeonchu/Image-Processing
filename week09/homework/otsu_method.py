@@ -16,13 +16,14 @@ def get_histogram(img:np.ndarray, mask:Optional[np.ndarray]=None):
 
     if mask is not None:
         assert mask.dtype == np.bool_, "마스크 타입이 bool이 아닙니다."
-        values = ???
+        values = img[mask].reshape(-1)
 
     histogram = np.zeros((256,), dtype=np.float32)
 
     # TODO: <-- 이 부분에 코드가 한 줄 이상 들어갑니다! -->
     # 각 밝기 값의 빈도수 세기
-    ???
+    for intensity in values:
+        histogram[intensity] += 1
 
     return histogram
 
@@ -36,7 +37,7 @@ def find_threshold(img:np.ndarray, mask:Optional[np.ndarray]=None):
     histogram = get_histogram(img, mask)
 
     intensities = np.arange(256) # 존재할 수 있는 밝기값 (0~255)
-    probs = ??? # 각 밝기 값이 존재할 확률, 이론 자료의 "p"에 해당
+    probs = histogram / (np.sum(histogram) + 1e-8) # 각 밝기 값이 존재할 확률, 이론 자료의 "p"에 해당
 
     left_prob = 0   # Threshold 기준 왼쪽 범위의 밝기 값이 등장할 확률, 이론 자료의 "q1"에 해당
     left_mean = 0   # Threshold 기준 왼쪽 범위에 대한 평균, 이론 자료의 "m1"에 해당
@@ -51,9 +52,19 @@ def find_threshold(img:np.ndarray, mask:Optional[np.ndarray]=None):
         # Intensity 에 대해 between-class variance 계산
         # 실습 자료의 수식에 따라 moving average 를 적용
         # Divide-by-zero 에러를 피하기 위해 분모에 1e-8을 더해줄 것!
-        pass
+        p = probs[intensity]
+        left_prob += p
+        right_prob -= p
 
-    threshold = ???
+        if left_prob > 0:
+            left_mean = (left_mean * (left_prob - p) + intensity * p) / (left_prob + 1e-8)
+        if right_prob > 0:
+            right_mean = (right_mean * (right_prob + p) - intensity * p) / (right_prob + 1e-8)
+
+        sigma_b = left_prob * right_prob * (left_mean - right_mean) ** 2
+        between_class_variances.append(sigma_b)
+
+    threshold = int(np.argmax(between_class_variances))
 
     return threshold
 
@@ -66,16 +77,16 @@ if __name__ == '__main__':
 
     # Masking 을 적용했을 때의 threshold 찾기
     threshold_without_mask = find_threshold(meat_gray)
-    fat_without_mask = ??? # Thresholding 적용
+    fat_without_mask = (meat_gray >= threshold_without_mask).astype(np.uint8)
     fat_without_mask_3ch = np.stack([pad, fat_without_mask*255, pad], axis=-1)
     no_mask_result = cv2.addWeighted(meat, 1, fat_without_mask_3ch.astype(np.uint8), 0.5, 0)
     fat_ratio_no_mask = np.round(np.sum(fat_without_mask * mask) / np.sum(mask), decimals=4)
 
     # Masking 을 적용하지 않았을 때의 threshold 찾기
     threshold_with_mask = find_threshold(meat_gray, mask)
-    fat_with_mask = ??? # Thresholding 적용
-    fat_without_mask_3ch = np.stack([pad, fat_with_mask*255, pad], axis=-1)
-    mask_result = cv2.addWeighted(meat, 1, fat_without_mask_3ch.astype(np.uint8), 0.5, 0)
+    fat_with_mask = (meat_gray >= threshold_with_mask).astype(np.uint8)
+    fat_with_mask_3ch = np.stack([pad, fat_with_mask*255, pad], axis=-1)
+    mask_result = cv2.addWeighted(meat, 1, fat_with_mask_3ch.astype(np.uint8), 0.5, 0)
     fat_ratio_mask = np.round(np.sum(fat_with_mask * mask) / np.sum(mask), decimals=4)
 
     # Visualization

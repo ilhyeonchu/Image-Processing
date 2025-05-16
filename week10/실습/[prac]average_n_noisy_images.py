@@ -6,7 +6,10 @@ def add_gaus_noise(src, mean=0, sigma=0.1):
     dst = src / 255
     (h, w) = dst.shape
 
-    ???
+    noise = np.random.normal(mean, sigma, size=(h, w))
+
+    # I_g(x,y) = I(x,y) + N(x,y)
+    dst += noise
 
     return dst
 
@@ -22,7 +25,10 @@ def main():
     for i in range(N):
         N_imgs[i] = add_gaus_noise(src, mean=0, sigma=0.1)
 
-    dst = ???
+    dst = np.mean(N_imgs, axis=0)
+    dst *= 255
+    dst = np.clip(dst+0.5, 0, 255)
+    dst = dst.astype(np.uint8)
 
     cv2.imshow('original', src)
     cv2.imshow('noisy image', N_imgs[-1])

@@ -40,7 +40,15 @@ def my_median_filtering(src, fsize):
 
     for row in range(h):
         for col in range(w):
-            ???
+
+            r_start = np.clip(row - fsize // 2, 0, h - 1)
+            r_end = np.clip(row + fsize // 2, 0, h - 1)
+
+            c_start = np.clip(col - fsize // 2, 0, w - 1)
+            c_end = np.clip(col + fsize // 2, 0, w - 1)
+            filter = src[r_start:r_end + 1, c_start:c_end + 1]
+
+            dst[row, col] = np.median(filter)
 
     return dst.astype(np.uint8)
 
