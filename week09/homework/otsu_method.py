@@ -22,6 +22,7 @@ def get_histogram(img:np.ndarray, mask:Optional[np.ndarray]=None):
 
     # TODO: <-- 이 부분에 코드가 한 줄 이상 들어갑니다! -->
     # 각 밝기 값의 빈도수 세기
+    # 위에서 만든 values 값을 이용해 빈도 구하기
     for intensity in values:
         histogram[intensity] += 1
 
@@ -52,18 +53,20 @@ def find_threshold(img:np.ndarray, mask:Optional[np.ndarray]=None):
         # Intensity 에 대해 between-class variance 계산
         # 실습 자료의 수식에 따라 moving average 를 적용
         # Divide-by-zero 에러를 피하기 위해 분모에 1e-8을 더해줄 것!
+
+        # 반복하면서 한칸씩 이동
         p = probs[intensity]
         left_prob += p
         right_prob -= p
-
+        
         if left_prob > 0:
             left_mean = (left_mean * (left_prob - p) + intensity * p) / (left_prob + 1e-8)
         if right_prob > 0:
             right_mean = (right_mean * (right_prob + p) - intensity * p) / (right_prob + 1e-8)
-
+        # 위에서 누적한 값을 공식에 적용
         sigma_b = left_prob * right_prob * (left_mean - right_mean) ** 2
         between_class_variances.append(sigma_b)
-
+    # 계산 결과에 따른 임계값 설정
     threshold = int(np.argmax(between_class_variances))
 
     return threshold
@@ -77,14 +80,14 @@ if __name__ == '__main__':
 
     # Masking 을 적용했을 때의 threshold 찾기
     threshold_without_mask = find_threshold(meat_gray)
-    fat_without_mask = (meat_gray >= threshold_without_mask).astype(np.uint8)
+    fat_without_mask = (meat_gray >= threshold_without_mask).astype(np.uint8) # Thresholdinig 적용
     fat_without_mask_3ch = np.stack([pad, fat_without_mask*255, pad], axis=-1)
     no_mask_result = cv2.addWeighted(meat, 1, fat_without_mask_3ch.astype(np.uint8), 0.5, 0)
     fat_ratio_no_mask = np.round(np.sum(fat_without_mask * mask) / np.sum(mask), decimals=4)
 
     # Masking 을 적용하지 않았을 때의 threshold 찾기
     threshold_with_mask = find_threshold(meat_gray, mask)
-    fat_with_mask = (meat_gray >= threshold_with_mask).astype(np.uint8)
+    fat_with_mask = (meat_gray >= threshold_with_mask).astype(np.uint8) # Thresholdinig 적용
     fat_with_mask_3ch = np.stack([pad, fat_with_mask*255, pad], axis=-1)
     mask_result = cv2.addWeighted(meat, 1, fat_with_mask_3ch.astype(np.uint8), 0.5, 0)
     fat_ratio_mask = np.round(np.sum(fat_with_mask * mask) / np.sum(mask), decimals=4)
