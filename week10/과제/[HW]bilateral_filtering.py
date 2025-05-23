@@ -80,29 +80,24 @@ def my_bilateral_with_patch(src, fsize, bsize, sigma_xy, sigma_r, pad_type='zero
                         sim_patch = cand_patch
                         sim_center_val = src_pad[si, sj]
 
-            # if no similar patch was found (edge cases), fall back to the reference patch
-            if sim_patch is None:
-                sim_patch = my_patch
-                sim_center_val = src_pad[ci, cj]
-
-            # 3) bilateral filtering on the reference patch
+            # 본인 패치 F 계산
             ref_center_val = src_pad[ci, cj]
             range_kernel_ref = np.exp(-((my_patch - ref_center_val) ** 2) /
                                       (2 * (sigma_r ** 2))).astype(np.float32)
             weight_ref = gaussian_kernel * range_kernel_ref
             res_ref = np.sum(weight_ref * my_patch) / np.sum(weight_ref)
 
-            # 4) bilateral filtering on the similar patch
+            # 가장 유사한 패치 F' 계산
             range_kernel_sim = np.exp(-((sim_patch - sim_center_val) ** 2) /
                                       (2 * (sigma_r ** 2))).astype(np.float32)
             weight_sim = gaussian_kernel * range_kernel_sim
             res_sim = np.sum(weight_sim * sim_patch) / np.sum(weight_sim)
 
-            # 5) combine the two results (equal weights as 기본 설정)
-            dst[i, j] = 0.5 * res_ref + 0.5 * res_sim
+            # (0.2, 0.2) (0.5, 0.5) (0.8, 0.8) (0.8, 0.2) (0.2, 0.8) 해보기
+            dst[i, j] = 0.8 * res_ref + 0.2 * res_sim
 
-    print()  # move to the next line after the progress bar
-    return my_normalize(np.clip(dst, 0.0, 1.0))
+    print()
+    return my_normalize(dst)
 
 if __name__ == '__main__':
 
