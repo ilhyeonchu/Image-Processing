@@ -1,0 +1,43 @@
+# 이미지 파일 무시 / Ignore image files
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+*.tiff
+*.tif
+*.webp
+*.svg
+*.heic
+*.ico
+
+# 동영상 파일 무시 / Ignore video files
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.mpg
+*.mpeg
+*.m4v
+*.3gp
+*.ts
+*.ogv
+
+# 음성 파일 무시 / Ignore audio files
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.m4a
+*.aac
+*.wma
+*.aiff
+*.alac
+*.opus
+*.amr
+
+# Mac에서 생기는 시스템 파일 무시 / Ignore system files (optional)
+.DS_Store
