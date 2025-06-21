@@ -6,11 +6,20 @@ class DiscreteCosineTransform:
         """
         Value 값에 따라 상수를 다르게 적용.
         이론 자료의 수식을 참고
+        
+        Args:
+            value: 상수 인덱스 (u 또는 v)
+            size: 블록 크기
+            
+        Returns:
+            상수 값 (1/sqrt(2) if value == 0 else 1.0)
         """
         assert size > 0, "크기는 0일 수 없습니다."
-
-        ???
-        pass
+        
+        if value == 0:
+            return 1.0 / np.sqrt(2)
+        else:
+            return 1.0
 
     @classmethod
     def spatial_to_frequency(cls, spatial_domain):
@@ -22,11 +31,23 @@ class DiscreteCosineTransform:
 
         domain_size = spatial_domain.shape[0]
 
-        frequency_domain = np.zeros_like(spatial_domain)
+        frequency_domain = np.zeros_like(spatial_domain, dtype=np.float64)
+        
+        # DCT 공식 적용
         for v in range(domain_size):
             for u in range(domain_size):
-                ???
-                pass
+                sum_val = 0.0
+                for y in range(domain_size):
+                    for x in range(domain_size):
+                        # DCT 수식 적용
+                        cos_x = np.cos((2*x + 1) * u * np.pi / (2 * domain_size))
+                        cos_y = np.cos((2*y + 1) * v * np.pi / (2 * domain_size))
+                        sum_val += spatial_domain[y, x] * cos_x * cos_y
+                
+                # 상수 항 적용
+                c_u = cls.constant(u, domain_size)
+                c_v = cls.constant(v, domain_size)
+                frequency_domain[v, u] = 0.25 * c_u * c_v * sum_val
 
         return frequency_domain
 
@@ -40,11 +61,22 @@ class DiscreteCosineTransform:
 
         domain_size = frequency_domain.shape[0]
 
-        spatial_domain = np.zeros_like(frequency_domain)
+        spatial_domain = np.zeros_like(frequency_domain, dtype=np.float64)
+        
+        # 역 DCT 공식 적용
         for y in range(domain_size):
             for x in range(domain_size):
-                ???
-                pass
+                sum_val = 0.0
+                for v in range(domain_size):
+                    for u in range(domain_size):
+                        # 역 DCT 수식 적용
+                        c_u = cls.constant(u, domain_size)
+                        c_v = cls.constant(v, domain_size)
+                        cos_x = np.cos((2*x + 1) * u * np.pi / (2 * domain_size))
+                        cos_y = np.cos((2*y + 1) * v * np.pi / (2 * domain_size))
+                        sum_val += c_u * c_v * frequency_domain[v, u] * cos_x * cos_y
+                
+                spatial_domain[y, x] = 0.25 * sum_val
 
         return spatial_domain
 

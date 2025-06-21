@@ -34,9 +34,9 @@ class JPEG:
         :param quantization_scale: Scale을 얼마나 줄지에 대한 값
         :return:
         """
-        scaled_matrix = np.clip(cls.QUANTIZATION_MATRIX * quantization_scale, 0, 255)
-        resized_matrix = ???
-
+        scaled_matrix = np.clip(cls.QUANTIZATION_MATRIX * quantization_scale, 1, 255)  # 0으로 나누기 방지를 위해 최소값을 1로 설정
+        # 양자화 행렬을 block_size에 맞게 리사이즈 (cv2.INTER_LINEAR 사용)
+        resized_matrix = cv2.resize(scaled_matrix, (block_size, block_size), interpolation=cv2.INTER_LINEAR)
         return resized_matrix
 
     @classmethod
@@ -80,28 +80,84 @@ class JPEG:
     def image_to_blocks(cls, img, block_size):
         """
         이미지를 블럭 크기에 맞게 자르는 메서드
-        즉, 이미지는 (block_num, block_size, block_size, channel)의 shape을 가져야함
+        
+        Args:
+            img: 입력 이미지 (H, W) or (H, W, C)
+            block_size: 블록 크기
+            
+        Returns:
+            numpy.ndarray: 블록으로 분할된 이미지 (n_blocks, block_size, block_size)
         """
-        blocks = ???
-
+        h, w = img.shape[:2]
+        
+        # 2D 이미지인 경우 채널 차원 추가
+        if len(img.shape) == 2:
+            img = img[..., np.newaxis]
+            
+        # 블록으로 분할
+        n_blocks_h = h // block_size
+        n_blocks_w = w // block_size
+        
+        # (n_blocks_h, block_size, n_blocks_w, block_size, C)
+        blocks = img.reshape(n_blocks_h, block_size, n_blocks_w, block_size, -1)
+        # (n_blocks_h, n_blocks_w, block_size, block_size, C)
+        blocks = blocks.transpose(0, 2, 1, 3, 4)
+        # (n_blocks_h * n_blocks_w, block_size, block_size, C)
+        blocks = blocks.reshape(-1, block_size, block_size, blocks.shape[-1])
+        
+        # 채널이 1개인 경우 마지막 차원 제거
+        if blocks.shape[-1] == 1:
+            blocks = blocks[..., 0]
+            
         return blocks
 
     @classmethod
     def blocks_to_image(cls, blocks, img_size, block_size):
         """
-        (block_num, block_size, block_size, channel)의 shape을 갖는 블럭들을 (img_height, img_width, channel)로 변환해주는 메서드
+        블록들을 원본 이미지 형태로 변환하는 메서드
+        
+        Args:
+            blocks: 블록으로 분할된 이미지 (n_blocks, block_size, block_size)
+            img_size: 원본 이미지 크기 (H, W)
+            block_size: 블록 크기
+            
+        Returns:
+            numpy.ndarray: 원본 이미지 형태로 변환된 배열 (H, W)
         """
-        image = ???
-
+        h, w = img_size
+        n_blocks_h = h // block_size
+        n_blocks_w = w // block_size
+        
+        # 2D 블록인 경우 채널 차원 추가
+        if len(blocks.shape) == 3:
+            blocks = blocks[..., np.newaxis]
+            
+        # 블록을 원래 이미지 형태로 재구성
+        # (n_blocks_h, n_blocks_w, block_size, block_size, C)
+        blocks = blocks.reshape(n_blocks_h, n_blocks_w, block_size, block_size, -1)
+        # (n_blocks_h, block_size, n_blocks_w, block_size, C)
+        blocks = blocks.transpose(0, 2, 1, 3, 4)
+        # (n_blocks_h * block_size, n_blocks_w * block_size, C)
+        image = blocks.reshape(h, w, -1)
+        
+        # 채널이 1개인 경우 마지막 차원 제거
+        if image.shape[-1] == 1:
+            image = image[..., 0]
+            
         return image
 
     @classmethod
     def get_residual(cls, compressed_blocks, img_shape, block_size):
         """
-        :param compressed_blocks: Zigzag scanning 이 적용된 블럭들
-        :param img_shape: 입력 이미지의 크기
-        :param block_size:
-        :return:
+        블록 간의 잔차를 계산하는 메서드
+        
+        Args:
+            compressed_blocks: Zigzag scanning이 적용된 블록들
+            img_shape: 입력 이미지의 크기 (H, W)
+            block_size: 블록 크기
+            
+        Returns:
+            list: 잔차가 적용된 블록들의 리스트
         """
         img_h, img_w = img_shape
 
@@ -110,17 +166,46 @@ class JPEG:
 
         assert len(compressed_blocks) == vertical_block_num * horizontal_block_num, "블럭 개수가 다릅니다."
 
-        ???
-
+        residuals = []
+        prev_block = None
+        
+        for i, block in enumerate(compressed_blocks):
+            if i == 0:
+                # 첫 번째 블록은 그대로 유지
+                residuals.append(block.copy() if isinstance(block, list) else block.tolist())
+            else:
+                # 이전 블록과의 차이를 계산
+                residual_block = []
+                min_len = min(len(block), len(prev_block))
+                for j in range(min_len):
+                    if isinstance(block[j], str) and block[j] == 'EOB':
+                        residual_block.append('EOB')
+                        break
+                    if isinstance(prev_block[j], str) or isinstance(block[j], str):
+                        continue
+                    residual_block.append(block[j] - prev_block[j])
+                
+                # EOB가 없으면 추가
+                if 'EOB' not in residual_block and residual_block:
+                    residual_block.append('EOB')
+                residuals.append(residual_block)
+            
+            prev_block = block.copy() if isinstance(block, list) else block.tolist()
+            
         return residuals
 
     @classmethod
     def get_inverse_residual(cls, residuals, img_shape, block_size):
         """
-        :param residuals: get_residual 메서드의 결과
-        :param img_shape: 이미지 크기
-        :param block_size:
-        :return:
+        잔차로부터 원본 블록들을 복원하는 메서드
+        
+        Args:
+            residuals: 잔차가 적용된 블록들의 리스트
+            img_shape: 이미지 크기 (H, W)
+            block_size: 블록 크기
+            
+        Returns:
+            list: 복원된 블록들의 리스트
         """
         img_h, img_w = img_shape
 
@@ -129,8 +214,32 @@ class JPEG:
 
         assert len(residuals) == vertical_block_num * horizontal_block_num, "블럭 개수가 다릅니다."
 
-        ???
-
+        compressed_blocks = []
+        prev_block = None
+        
+        for i, residual in enumerate(residuals):
+            if i == 0:
+                # 첫 번째 블록은 그대로 유지
+                compressed_blocks.append(residual.copy() if isinstance(residual, list) else residual.tolist())
+            else:
+                # 이전 블록에 잔차를 더해 원본 블록 복원
+                recovered_block = []
+                min_len = min(len(residual), len(prev_block))
+                for j in range(min_len):
+                    if isinstance(residual[j], str) and residual[j] == 'EOB':
+                        recovered_block.append('EOB')
+                        break
+                    if isinstance(prev_block[j], str) or (j < len(residual) and isinstance(residual[j], str)):
+                        continue
+                    recovered_block.append(residual[j] + prev_block[j])
+                
+                # EOB가 없으면 추가
+                if 'EOB' not in recovered_block and recovered_block:
+                    recovered_block.append('EOB')
+                compressed_blocks.append(recovered_block)
+            
+            prev_block = compressed_blocks[-1].copy() if isinstance(compressed_blocks[-1], list) else compressed_blocks[-1].tolist()
+            
         return compressed_blocks
 
 

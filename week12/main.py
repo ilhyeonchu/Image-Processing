@@ -8,10 +8,19 @@ from jpeg import JPEG
 def pad_right_and_bottom(image, pad_right, pad_bottom):
     """
     주어진 이미지의 오른쪽 및 아래에 zero padding을 수행
+    
+    Args:
+        image: 입력 이미지 (H, W, C)
+        pad_right: 오른쪽에 추가할 패딩 크기
+        pad_bottom: 아래쪽에 추가할 패딩 크기
+        
+    Returns:
+        패딩이 적용된 이미지
     """
     h, w, c = image.shape
-    padded_image = ???
-
+    padded_image = np.zeros((h + pad_bottom, w + pad_right, c), dtype=image.dtype)
+    padded_image[:h, :w, :] = image
+    
     return padded_image
 
 if __name__ == "__main__":
@@ -19,8 +28,11 @@ if __name__ == "__main__":
     QUANTIZATION_SCALES = [1, 5, 10]
 
     img = cv2.imread("image.jpg")[...,::-1]
-    pad_bottom = ???
-    pad_right = ???
+    
+    # 이미지 크기를 BLOCK_SIZE의 배수로 만들기 위한 패딩 크기 계산
+    h, w = img.shape[:2]
+    pad_bottom = (BLOCK_SIZE - h % BLOCK_SIZE) % BLOCK_SIZE
+    pad_right = (BLOCK_SIZE - w % BLOCK_SIZE) % BLOCK_SIZE
 
     ######################### 아래는 수정 금지 #########################
     padded_img = pad_right_and_bottom(img, pad_right, pad_bottom)
