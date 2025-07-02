@@ -9,8 +9,9 @@ class DiscreteCosineTransform:
         """
         assert size > 0, "크기는 0일 수 없습니다."
 
-        ???
-        pass
+        if value == 0:
+            return 1 / np.sqrt(2)
+        return 1.0
 
     @classmethod
     def spatial_to_frequency(cls, spatial_domain):
@@ -25,8 +26,13 @@ class DiscreteCosineTransform:
         frequency_domain = np.zeros_like(spatial_domain)
         for v in range(domain_size):
             for u in range(domain_size):
-                ???
-                pass
+                sum_val = 0
+                for y in range(domain_size):
+                    for x in range(domain_size):
+                        cos_val = np.cos(((2 * x + 1) * u * np.pi) / (2 * domain_size)) * \
+                                  np.cos(((2 * y + 1) * v * np.pi) / (2 * domain_size))
+                        sum_val += spatial_domain[y, x] * cos_val
+                frequency_domain[v, u] = (2 / domain_size) * cls.constant(u, domain_size) * cls.constant(v, domain_size) * sum_val
 
         return frequency_domain
 
@@ -43,8 +49,13 @@ class DiscreteCosineTransform:
         spatial_domain = np.zeros_like(frequency_domain)
         for y in range(domain_size):
             for x in range(domain_size):
-                ???
-                pass
+                sum_val = 0
+                for v in range(domain_size):
+                    for u in range(domain_size):
+                        cos_val = np.cos(((2 * x + 1) * u * np.pi) / (2 * domain_size)) * \
+                                  np.cos(((2 * y + 1) * v * np.pi) / (2 * domain_size))
+                        sum_val += cls.constant(u, domain_size) * cls.constant(v, domain_size) * frequency_domain[v, u] * cos_val
+                spatial_domain[y, x] = (2 / domain_size) * sum_val
 
         return spatial_domain
 

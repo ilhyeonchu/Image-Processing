@@ -10,8 +10,34 @@ class ZigzagScanning:
         """
         assert quantized_values.shape[0] == quantized_values.shape[1]
 
-        ???
+        block_size = quantized_values.shape[0]
+        v_min, v_max = 0, block_size - 1
+        h_min, h_max = 0, block_size - 1
+        i, j = 0, 0
+        encode_result = []
+        while (i <= v_max) and (j <= h_max):
+            encode_result.append(quantized_values[i, j])
+            if (i + j) % 2 == 0:  # Going up
+                if j == h_max:
+                    i += 1
+                elif i == v_min:
+                    j += 1
+                else:
+                    i -= 1
+                    j += 1
+            else:  # Going down
+                if i == v_max:
+                    j += 1
+                elif j == h_min:
+                    i += 1
+                else:
+                    i += 1
+                    j -= 1
 
+        # Remove trailing zeros and add EOB
+        while encode_result and encode_result[-1] == 0:
+            encode_result.pop()
+        encode_result.append('EOB')
         return encode_result
 
     @classmethod
@@ -22,7 +48,32 @@ class ZigzagScanning:
         :return:
         """
 
-        ???
+        v_min, v_max = 0, block_size - 1
+        h_min, h_max = 0, block_size - 1
+        i, j = 0, 0
+        decode_output = np.zeros((block_size, block_size), dtype=np.int64)
+        values = encoded_values[:-1]  # Remove EOB
+        k = 0
+        while (i <= v_max) and (j <= h_max):
+            if k < len(values):
+                decode_output[i, j] = values[k]
+                k += 1
+            if (i + j) % 2 == 0:  # Going up
+                if j == h_max:
+                    i += 1
+                elif i == v_min:
+                    j += 1
+                else:
+                    i -= 1
+                    j += 1
+            else:  # Going down
+                if i == v_max:
+                    j += 1
+                elif j == h_min:
+                    i += 1
+                else:
+                    i += 1
+                    j -= 1
 
         return np.array(decode_output)
 

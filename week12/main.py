@@ -10,7 +10,8 @@ def pad_right_and_bottom(image, pad_right, pad_bottom):
     주어진 이미지의 오른쪽 및 아래에 zero padding을 수행
     """
     h, w, c = image.shape
-    padded_image = ???
+    padded_image = np.zeros((h + pad_bottom, w + pad_right, c), dtype=image.dtype)
+    padded_image[:h, :w, :] = image
 
     return padded_image
 
@@ -19,8 +20,9 @@ if __name__ == "__main__":
     QUANTIZATION_SCALES = [1, 5, 10]
 
     img = cv2.imread("image.jpg")[...,::-1]
-    pad_bottom = ???
-    pad_right = ???
+    h, w, _ = img.shape
+    pad_bottom = (BLOCK_SIZE - h % BLOCK_SIZE) % BLOCK_SIZE
+    pad_right = (BLOCK_SIZE - w % BLOCK_SIZE) % BLOCK_SIZE
 
     ######################### 아래는 수정 금지 #########################
     padded_img = pad_right_and_bottom(img, pad_right, pad_bottom)
@@ -38,7 +40,7 @@ if __name__ == "__main__":
         output = output[:img.shape[0], :img.shape[1]]
         outputs.append(output)
 
-    cv2.imwrite("./decompressed_image.png", outputs[0]) # 전체 이미지 확인용
+    cv2.imwrite("./decompressed_image.png", outputs[0][...,::-1]) # 전체 이미지 확인용 (RGB -> BGR 변환 후 저장)
 
     plt.figure(figsize=(10, 8))
     plt.subplot(3, 3, 1)

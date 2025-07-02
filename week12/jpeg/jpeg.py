@@ -35,7 +35,7 @@ class JPEG:
         :return:
         """
         scaled_matrix = np.clip(cls.QUANTIZATION_MATRIX * quantization_scale, 0, 255)
-        resized_matrix = ???
+        resized_matrix = cv2.resize(scaled_matrix, (block_size, block_size))
 
         return resized_matrix
 
@@ -82,7 +82,8 @@ class JPEG:
         이미지를 블럭 크기에 맞게 자르는 메서드
         즉, 이미지는 (block_num, block_size, block_size, channel)의 shape을 가져야함
         """
-        blocks = ???
+        h, w = img.shape
+        blocks = img.reshape(h // block_size, block_size, w // block_size, block_size).swapaxes(1, 2).reshape(-1, block_size, block_size)
 
         return blocks
 
@@ -91,7 +92,8 @@ class JPEG:
         """
         (block_num, block_size, block_size, channel)의 shape을 갖는 블럭들을 (img_height, img_width, channel)로 변환해주는 메서드
         """
-        image = ???
+        h, w = img_size
+        image = blocks.reshape(h // block_size, w // block_size, block_size, block_size).swapaxes(1, 2).reshape(h, w)
 
         return image
 
@@ -110,7 +112,21 @@ class JPEG:
 
         assert len(compressed_blocks) == vertical_block_num * horizontal_block_num, "블럭 개수가 다릅니다."
 
-        ???
+        residuals = [compressed_blocks[0]]
+        for i in range(1, len(compressed_blocks)):
+            # Pad current and previous blocks to full size before subtraction
+            current_block_padded = np.zeros(block_size * block_size, dtype=np.int64)
+            current_block_padded[:len(compressed_blocks[i][:-1])] = compressed_blocks[i][:-1]
+
+            prev_block_padded = np.zeros(block_size * block_size, dtype=np.int64)
+            prev_block_padded[:len(compressed_blocks[i-1][:-1])] = compressed_blocks[i-1][:-1]
+
+            residual = list(current_block_padded - prev_block_padded)
+            # Remove trailing zeros and add EOB
+            while residual and residual[-1] == 0:
+                residual.pop()
+            residual.append("EOB")
+            residuals.append(residual)
 
         return residuals
 
@@ -129,7 +145,24 @@ class JPEG:
 
         assert len(residuals) == vertical_block_num * horizontal_block_num, "블럭 개수가 다릅니다."
 
-        ???
+        compressed_blocks = [residuals[0]]
+        for i in range(1, len(residuals)):
+            residual = residuals[i][:-1] # Remove EOB
+            prev_block = compressed_blocks[i-1][:-1] # Remove EOB
+
+            # Pad residual to match prev_block length
+            padded_residual = np.zeros(block_size * block_size, dtype=np.int64)
+            padded_residual[:len(residual)] = residual
+
+            padded_prev_block = np.zeros(block_size * block_size, dtype=np.int64)
+            padded_prev_block[:len(prev_block)] = prev_block
+
+            deblocked = list(padded_residual + padded_prev_block)
+            # Remove trailing zeros and add EOB
+            while deblocked and deblocked[-1] == 0:
+                deblocked.pop()
+            deblocked.append("EOB")
+            compressed_blocks.append(deblocked)
 
         return compressed_blocks
 
