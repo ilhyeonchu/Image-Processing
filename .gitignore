@@ -29,4 +29,4 @@
 /venv
 
 # Mac에서 생기는 시스템 파일 무시 / Ignore system files (optional)
-.DS_Store
+*.DS_Store
